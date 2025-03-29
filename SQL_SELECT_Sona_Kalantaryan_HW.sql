@@ -5,25 +5,20 @@ INNER JOIN public.film_category fc ON f.film_id = fc.film_id
 INNER JOIN public.category c ON fc.category_id = c.category_id
 WHERE c.name = 'Animation' --filter based on the film category, choose only Animation
 AND f.release_year BETWEEN 2017 AND 2019 --filter based on the release year
-AND f.rating IN ('G', 'PG', 'PG-13', 'R') --filter based on the ratings that are higher than 1 - means exclude NC17
+AND f.rental_rate > 1 --filter based on the ratings that are higher than 1
 ORDER BY f.title ASC;
 
 --1-2
 SELECT 
-	CASE WHEN a.address is NULL OR a.address2 is NULL THEN a.address || a.address2
-		ELSE a.address || ', ' || a.address2 
-	END AS full_address,
-	--when any of the addresses is null then write them without space or , 
-	--if a.address is null it will write only a.address2 and vice vers
-	--and if none of them is null - ELSE - then it will write a.address, a.address2
+	COALESCE(a.address, '') || COALESCE(', ' || a.address2, '') AS address,
     SUM(p.amount) AS revenue
 FROM public.store s
 LEFT JOIN public.address a ON s.address_id = a.address_id --LEFT as the store can not have address, but we will still need it
 INNER JOIN public.inventory i ON s.store_id = i.store_id --INNER as if the store is not in inventory then it does not have payments
 INNER JOIN public.rental r ON i.inventory_id = r.inventory_id --INNER as if the inventory is not in rental it does not have payments
 LEFT JOIN public.payment p ON r.rental_id = p.rental_id --LEFT as the rental can not have payments
-WHERE EXTRACT(YEAR FROM r.rental_date) = 2017 --the movie was rented in 2017
-	AND EXTRACT(MONTH FROM r.rental_date) > 3 --the movie was rented after March
+WHERE EXTRACT(YEAR FROM p.payment_date) = 2017 --the movie was rented in 2017
+	AND EXTRACT(MONTH FROM p.payment_date) > 3 --the movie was rented after March
 GROUP BY s.store_id, a.address, a.address2
 ORDER BY revenue DESC;
 
