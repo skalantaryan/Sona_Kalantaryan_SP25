@@ -73,7 +73,8 @@ INNER JOIN public.staff e ON te.staff_id = e.staff_id
 INNER JOIN public.store s ON te.store_id = s.store_id
 --INNER JOINs as we need each employee's revenue from each store
 WHERE te.store_rank = 1  --choose the last place of work of each employee
-ORDER BY te.total_revenue DESC;
+ORDER BY te.total_revenue DESC
+LIMIT 3;
 
 --2-2
 WITH movie_rentals AS (
@@ -119,13 +120,15 @@ ORDER BY first_name, last_name;
 WITH movie_gaps AS (
     SELECT a.actor_id, a.first_name, a.last_name, f1.release_year AS release_year,
            MIN(f2.release_year) AS next_release_year, --this gets the next movie release year
-		   CASE 
+		   /*CASE 
 		   	WHEN MIN(f2.release_year) IS NULL
 			   THEN EXTRACT(YEAR FROM CURRENT_DATE) - f1.release_year
            	ELSE 
-			   MIN(f2.release_year) - f1.release_year 
-			END AS gap_between_films
+			   MIN(f2.release_year) - f1.release_year
+			END AS gap_between_films*/
 			--if there was no next movie then the gap should be calculated till current year
+			MIN(f2.release_year) - f1.release_year as gap_between_films
+			--calculate the gap between 2 consecutive films' release years
     FROM public.actor a
     INNER JOIN public.film_actor fa1 ON a.actor_id = fa1.actor_id
     INNER JOIN public.film f1 ON fa1.film_id = f1.film_id
