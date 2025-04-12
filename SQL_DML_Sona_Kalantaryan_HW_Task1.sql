@@ -3,9 +3,9 @@ WITH new_movies AS (
     INSERT INTO film (title, description, release_year, language_id, rental_duration, rental_rate, last_update)
     SELECT * FROM (
         VALUES 
-            ('Inception', 'A mind-bending thriller about dream infiltration.', 2010, 1, 6, 19.99, CURRENT_DATE),
-            ('Sully: Miracle on the Hudson', 'A pilot safely lands a disabled plane on the Hudson River, saving 155 lives.', 2016, 1, 3, 9.99, CURRENT_DATE),
-            ('Interstellar', 'A journey through space and time to save humanity.', 2014, 1, 7, 4.99, CURRENT_DATE)
+            ('Inception', 'A mind-bending thriller about dream infiltration.', 2010, (SELECT language_id FROM language WHERE LOWER(name) = LOWER('english')), 6, 19.99, CURRENT_DATE),
+            ('Sully: Miracle on the Hudson', 'A pilot safely lands a disabled plane on the Hudson River, saving 155 lives.', 2016, (SELECT language_id FROM language WHERE LOWER(name) = LOWER('english')), 6, 19.99, CURRENT_DATE),
+            ('Interstellar', 'A journey through space and time to save humanity.', 2014, (SELECT language_id FROM language WHERE LOWER(name) = LOWER('english')), 6, 19.99, CURRENT_DATE)
     ) AS v(title, description, release_year, language_id, rental_duration, rental_rate, last_update)
     WHERE NOT EXISTS (
         SELECT * FROM film f WHERE f.title = v.title
@@ -13,7 +13,7 @@ WITH new_movies AS (
     RETURNING film_id, title
 ),
 
-new_actors AS (
+new_actor_insert AS (
     INSERT INTO actor (first_name, last_name, last_update)
     SELECT * FROM (
         VALUES 
@@ -24,25 +24,45 @@ new_actors AS (
             ('Matthew', 'McConaughey', CURRENT_DATE),
             ('Anne', 'Hathaway', CURRENT_DATE)
     ) AS v(first_name, last_name, last_update)
-    ON CONFLICT (first_name, last_name) DO NOTHING
     RETURNING actor_id, first_name, last_name
+),
+
+actor_film_map AS (
+    SELECT * FROM (VALUES
+        ('Inception', 'Leonardo', 'DiCaprio'),
+        ('Inception', 'Joseph', 'Gordon-Levitt'),
+        ('Inception', 'Tom', 'Hardy'),
+        ('Sully: Miracle on the Hudson', 'Tom', 'Hanks'),
+        ('Interstellar', 'Matthew', 'McConaughey'),
+        ('Interstellar', 'Anne', 'Hathaway')
+    ) AS t(title, first_name, last_name)
+),
+
+film_actor_insert AS (
+	INSERT INTO film_actor (actor_id, film_id, last_update)
+	SELECT a.actor_id, f.film_id, CURRENT_DATE
+	FROM actor_film_map m
+	JOIN actor a ON UPPER(a.first_name) = UPPER(m.first_name) AND UPPER(a.last_name) = UPPER(m.last_name)
+	JOIN film f ON UPPER(f.title) = UPPER(m.title)
+	WHERE NOT EXISTS (
+	    SELECT * FROM film_actor fa WHERE fa.actor_id = a.actor_id AND fa.film_id = f.film_id
+	)
+	RETURNING actor_id, film_id, last_update
 )
 
-INSERT INTO film_actor (actor_id, film_id, last_update)
-SELECT a.actor_id, f.film_id, CURRENT_DATE
-FROM new_movies f, new_actors a
-WHERE NOT EXISTS (
-    SELECT * FROM film_actor fa WHERE fa.actor_id = a.actor_id AND fa.film_id = f.film_id
-);
 
 
-INSERT INTO inventory (film_id, store_id, last_update)
-SELECT f.film_id, s.store_id, CURRENT_DATE
-FROM new_movies f
-JOIN store s ON s.store_id = 1 
-WHERE NOT EXISTS (
-    SELECT * FROM inventory i WHERE i.film_id = f.film_id AND i.store_id = s.store_id
-);
+WITH new_movies_insert AS (
+	INSERT INTO inventory (film_id, store_id, last_update)
+	SELECT film_id, 1, CURRENT_DATE
+	FROM  film f
+	WHERE f.title IN ('Inception', 'Sully: Miracle on the Hudson', 'Interstellar') AND NOT EXISTS (
+	    SELECT * FROM inventory i WHERE i.film_id = f.film_id AND i.store_id = 1
+	)
+	RETURNING film_id, store_id, last_update
+)
+
+SELECT * FROM new_movies_insert;
 
 
 WITH selected_customer AS (
@@ -52,31 +72,58 @@ WITH selected_customer AS (
     LIMIT 1
 )
 UPDATE customer
-SET first_name = 'Sona', last_name = 'Kalantaryan', email = 'sonakalantaryan23@gmail.com', address_id = (
-    SELECT address_id FROM address ORDER BY RANDOM() LIMIT 1
-), last_update = CURRENT_DATE
+SET first_name = 'Sona', 
+	last_name = 'Kalantaryan', 
+	email = 'sonakalantaryan23@gmail.com', 
+	address_id = (
+    	SELECT address_id FROM address LIMIT 1
+	), 
+	last_update = CURRENT_DATE
 WHERE customer_id = (SELECT customer_id FROM selected_customer);
 
+DELETE FROM payment
+WHERE customer_id = (
+    SELECT customer_id FROM customer
+    WHERE UPPER(first_name) = 'SONA' AND UPPER(last_name) = 'KALANTARYAN'
+);
 
-DELETE FROM rental WHERE customer_id = (SELECT customer_id FROM selected_customer);
-DELETE FROM payment WHERE customer_id = (SELECT customer_id FROM selected_customer);
+DELETE FROM rental
+WHERE customer_id = (
+    SELECT customer_id FROM customer
+    WHERE UPPER(first_name) = 'SONA' AND UPPER(last_name) = 'KALANTARYAN'
+);
 
 
-WITH rented_movies AS (
+WITH sona_customer AS (
+    SELECT customer_id 
+    FROM customer 
+    WHERE first_name = 'Sona' AND last_name = 'Kalantaryan'
+),
+rented AS (
     INSERT INTO rental (rental_date, inventory_id, customer_id, return_date, staff_id, last_update)
-    SELECT CURRENT_DATE, inventory.inventory_id, customer.customer_id, CURRENT_DATE + INTERVAL 'one_week', 1, CURRENT_DATE
-    FROM inventory
-    CROSS JOIN selected_customer AS customer
-    JOIN film ON film.film_id = inventory.film_id
-    WHERE film.title IN ('Inception', 'Sully: Miracle on the Hudson', 'Interstellar')
-    RETURNING rental_id, customer_id
+    SELECT 
+        CURRENT_DATE,
+        i.inventory_id,
+        c.customer_id,
+        CURRENT_DATE + INTERVAL '7 days',
+        1,
+        CURRENT_DATE
+    FROM inventory i
+    JOIN film f ON f.film_id = i.film_id
+    JOIN sona_customer c ON TRUE
+    WHERE f.title IN ('Inception', 'Sully: Miracle on the Hudson', 'Interstellar')
+    RETURNING rental_id, inventory_id, customer_id
 )
-INSERT INTO payment (customer_id, staff_id, rental_id, amount, payment_date, last_update)
-SELECT rented.customer_id, 1, rented.rental_id, film.rental_rate, CURRENT_DATE, CURRENT_DATE
-FROM rented_movies AS rented
-JOIN rental ON rental.rental_id = rented.rental_id
-JOIN inventory ON inventory.inventory_id = rental.inventory_id
-JOIN film ON film.film_id = inventory.film_id;
+INSERT INTO payment (customer_id, staff_id, rental_id, amount, payment_date)
+SELECT 
+    r.customer_id,
+    1,
+    r.rental_id,
+    f.rental_rate,
+    DATE '2017-01-10'
+FROM rented r
+INNER JOIN inventory i ON i.inventory_id = r.inventory_id
+INNER JOIN film f ON f.film_id = i.film_id;
 
 
 
