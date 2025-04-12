@@ -1,8 +1,10 @@
 CREATE DATABASE mountaineering_club_db;
 
+CREATE SCHEMA mountaineering_club_schema;
+
 
 --1 - Climbers
-CREATE TABLE Climbers (
+CREATE TABLE IF NOT EXISTS Climbers (
     climber_id SERIAL PRIMARY KEY,
     first_name VARCHAR(25) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
@@ -10,58 +12,67 @@ CREATE TABLE Climbers (
     phone_number VARCHAR(18) UNIQUE NOT NULL,
     address_id int NOT NULL
 );
+
 ALTER TABLE Climbers
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --2 - Address
-CREATE TABLE Address (
+CREATE TABLE IF NOT EXISTS Address (
     address_id SERIAL PRIMARY KEY,
     street VARCHAR(25) NOT NULL,
     city_id int NOT NULL,
     building_number int NOT NULL,
     postal_code int NOT NULL
 );
+
 ALTER TABLE Address
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --3 - City
-CREATE TABLE City (
+CREATE TABLE IF NOT EXISTS City (
     city_id SERIAL PRIMARY KEY,
     city_name VARCHAR(20) NOT NULL,
     country_id int NOT NULL
 );
+
 ALTER TABLE City
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --4 - Country
-CREATE TABLE Country (
+CREATE TABLE IF NOT EXISTS Country (
     country_id SERIAL PRIMARY KEY,
     country_name VARCHAR(25) NOT NULL
 );
+
+ALTER TABLE Country
+ADD CONSTRAINT unique_country_name UNIQUE (country_name);
+
 ALTER TABLE Country
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --5 - Clubs
-CREATE TABLE Clubs (
+CREATE TABLE IF NOT EXISTS Clubs (
     club_id SERIAL PRIMARY KEY,
     club_name VARCHAR(25) UNIQUE NOT NULL,
     membership_fee DECIMAL(10,2) NULL,
     created_at date NOT NULL 
 		CHECK (created_at > DATE '2000-01-01')
 );
+
 ALTER TABLE Clubs
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --6 - Club Climber
-CREATE TABLE Club_Climber (
+CREATE TABLE IF NOT EXISTS Club_Climber (
     club_id int NOT NULL,
     climber_id int NOT NULL
 );
+
 ALTER TABLE Club_Climber
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --7 - Climbs
-CREATE TABLE Climbs (
+CREATE TABLE IF NOT EXISTS Climbs (
     climb_id SERIAL PRIMARY KEY,
     mountain_id int NOT NULL,
     start_date date NOT NULL 
@@ -69,45 +80,50 @@ CREATE TABLE Climbs (
     end_date date NULL,
     success boolean NOT NULL
 );
+
 ALTER TABLE Climbs
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --8 - Climb Participant
-CREATE TABLE Climb_Participant (
+CREATE TABLE IF NOT EXISTS Climb_Participant (
     climb_id int NOT NULL,
     climber_id int NOT NULL
 );
+
 ALTER TABLE Climb_Participant
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --9 - Mountains
-CREATE TABLE Mountains (
+CREATE TABLE IF NOT EXISTS Mountains (
     mountain_id SERIAL PRIMARY KEY,
     name VARCHAR(25) UNIQUE NOT NULL,
     height_cm int NOT NULL
 );
+
 ALTER TABLE Mountains
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --10 - Mountain Country
-CREATE TABLE Mountain_Country (
+CREATE TABLE IF NOT EXISTS Mountain_Country (
     mountain_id int NOT NULL,
     country_id int NOT NULL
 );
+
 ALTER TABLE Mountain_Country
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --11 - Difficulty
-CREATE TABLE Difficulty (
+CREATE TABLE IF NOT EXISTS Difficulty (
     mountain_id int NOT NULL,
     difficulty VARCHAR(10) NOT NULL
 		CHECK(Difficulty.difficulty IN('Easy', 'Moderate', 'Hard'))
 );
+
 ALTER TABLE Difficulty
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --12 - Equipment
-CREATE TABLE Equipment (
+CREATE TABLE IF NOT EXISTS Equipment (
     equipment_id SERIAL PRIMARY KEY,
     name VARCHAR(20) NOT NULL,
     price_per_day DECIMAL NOT NULL
@@ -116,28 +132,34 @@ CREATE TABLE Equipment (
 		CHECK(quantity_available >= 0),
     type_id int NOT NULL
 );
+
 ALTER TABLE Equipment
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --13 - Equipment Type
-CREATE TABLE Equipment_Type (
+CREATE TABLE IF NOT EXISTS Equipment_Type (
     type_id SERIAL PRIMARY KEY,
     type VARCHAR(20) NOT NULL
 );
+
+ALTER TABLE Equipment_Type
+ADD CONSTRAINT unique_equipment_type UNIQUE (type);
+
 ALTER TABLE Equipment_Type
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --14 - Climb Equipment
-CREATE TABLE Climb_Equipment (
+CREATE TABLE IF NOT EXISTS Climb_Equipment (
     climb_id int NOT NULL,
     equipment_id int NOT NULL,
     quantity_used int NOT NULL
 );
+
 ALTER TABLE Climb_Equipment
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --15 - Equipment Rental
-CREATE TABLE Equipment_Rental (
+CREATE TABLE IF NOT EXISTS Equipment_Rental (
     rental_id SERIAL PRIMARY KEY,
     climber_id int NOT NULL,
     equipment_id int NOT NULL,
@@ -145,11 +167,12 @@ CREATE TABLE Equipment_Rental (
     return_date DATE NULL,
     rental_quantity int NOT NULL
 );
+
 ALTER TABLE Equipment_Rental
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --16 - Payments
-CREATE TABLE Payments (
+CREATE TABLE IF NOT EXISTS Payments (
     payment_id SERIAL PRIMARY KEY,
     climber_id int NOT NULL,
     amount DECIMAL(10,2) NOT NULL
@@ -181,27 +204,29 @@ ADD COLUMN is_successful BOOLEAN GENERATED ALWAYS AS (
 
 
 --17 - Payment Methods
-CREATE TABLE Payment_Methods (
+CREATE TABLE IF NOT EXISTS Payment_Methods (
     method_id SERIAL PRIMARY KEY,
     method VARCHAR(20) NOT NULL
 		CHECK(Payment_Methods.method IN('Credit Card', 'Bank Transfer', 'PayPal'))
 );
+
 ALTER TABLE Payment_Methods
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --18 - Service
-CREATE TABLE Service (
+CREATE TABLE IF NOT EXISTS Service (
     service_id SERIAL PRIMARY KEY,
     service_name VARCHAR(20) NOT NULL,
     description TEXT NULL,
     price DECIMAL(10,2) NOT NULL,
     duration_days int NOT NULL
 );
+
 ALTER TABLE Service
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
 --19 - Bookings
-CREATE TABLE Bookings (
+CREATE TABLE IF NOT EXISTS Bookings (
     booking_id SERIAL PRIMARY KEY,
     climber_id int NOT NULL,
     service_id int NOT NULL,
@@ -209,6 +234,7 @@ CREATE TABLE Bookings (
     status VARCHAR(10) NOT NULL
 		CHECK(Bookings.status IN('Pending', 'Confirmed', 'Cancelled'))
 );
+
 ALTER TABLE Bookings
 ADD COLUMN record_ts DATE NOT NULL DEFAULT CURRENT_DATE;
 
@@ -358,7 +384,6 @@ FOREIGN KEY (service_id)
 REFERENCES Service(service_id);
 
 
-ROLLBACK;
 
 --INSERT TRANSACTION
 BEGIN;
@@ -372,9 +397,9 @@ BEGIN
         VALUES ('Nepal', CURRENT_DATE);
     END IF;
     -- Same logic
-    IF NOT EXISTS (SELECT 1 FROM Country WHERE UPPER(country_name) = 'ITALY') THEN
+    IF NOT EXISTS (SELECT 1 FROM Country WHERE UPPER(country_name) = 'TANZANIA') THEN
         INSERT INTO Country (country_name, record_ts)
-        VALUES ('Italy', CURRENT_DATE);
+        VALUES ('Tanzania', CURRENT_DATE);
     END IF;
 END $$;
 
@@ -387,24 +412,24 @@ BEGIN
         VALUES ('Kathmandu', (SELECT country_id FROM Country WHERE UPPER(country_name) = 'NEPAL'), CURRENT_DATE);
     END IF;
     -- Same logic
-    IF NOT EXISTS (SELECT 1 FROM City WHERE UPPER(city_name) = 'ROME') THEN
+    IF NOT EXISTS (SELECT 1 FROM City WHERE UPPER(city_name) = 'MOSHI') THEN
         INSERT INTO City (city_name, country_id, record_ts)
-        VALUES ('Rome', (SELECT country_id FROM Country WHERE UPPER(country_name) = 'ITALY'), CURRENT_DATE);
+        VALUES ('Moshi', (SELECT country_id FROM Country WHERE UPPER(country_name) = 'TANZANIA'), CURRENT_DATE);
     END IF;
 END $$;
 
 -- Insert into Address
 DO $$
 BEGIN
-    -- Checking if 'Everest Street' already exists in Address table, if not, insert it
-    IF NOT EXISTS (SELECT 1 FROM Address WHERE LOWER(street) = 'everest street') THEN
+    -- Checking if the address already exists in Address table, if not, insert it
+    IF NOT EXISTS (SELECT 1 FROM Address WHERE LOWER(street) = 'thamel') THEN
         INSERT INTO Address (street, city_id, building_number, postal_code, record_ts)
-        VALUES ('Everest Street', (SELECT city_id FROM City WHERE LOWER(city_name) = 'kathmandu'), 123, 10110, CURRENT_DATE);
+        VALUES ('Thamel', (SELECT city_id FROM City WHERE LOWER(city_name) = 'kathmandu'), 123, 44600, CURRENT_DATE);
     END IF;
     -- Same logic
-    IF NOT EXISTS (SELECT 1 FROM Address WHERE LOWER(street) = 'colosseum road') THEN
+    IF NOT EXISTS (SELECT 1 FROM Address WHERE LOWER(street) = 'kaunda') THEN
         INSERT INTO Address (street, city_id, building_number, postal_code, record_ts)
-        VALUES ('Colosseum Road', (SELECT city_id FROM City WHERE LOWER(city_name) = 'rome'), 456, 20020, CURRENT_DATE);
+        VALUES ('Kaunda', (SELECT city_id FROM City WHERE LOWER(city_name) = 'moshi'), 456, 20020, CURRENT_DATE);
     END IF;
 END $$;
 
@@ -413,13 +438,13 @@ DO $$
 BEGIN
     -- Checking if 'Tenzing Norgay' already exists in Climbers table, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Climbers WHERE UPPER(first_name) = 'TENZING' AND UPPER(last_name) = 'NORGAY') THEN
-        INSERT INTO Climbers (climber_id, first_name, last_name, date_of_birth, phone_number, address_id, record_ts)
-        VALUES (1, 'Tenzing', 'Norgay', '1980-05-29', '123456789', (SELECT address_id FROM Address WHERE LOWER(street) = 'everest street'), CURRENT_DATE);
+        INSERT INTO Climbers (first_name, last_name, date_of_birth, phone_number, address_id, record_ts)
+        VALUES ('Tenzing', 'Norgay', '1980-05-29', '123456789', (SELECT address_id FROM Address WHERE LOWER(street) = 'thamel'), CURRENT_DATE);
     END IF;
     -- Same logic
     IF NOT EXISTS (SELECT 1 FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner') THEN
-        INSERT INTO Climbers (climber_id, first_name, last_name, date_of_birth, phone_number, address_id, record_ts)
-        VALUES (2, 'Reinhold', 'Messner', '1944-09-17', '987654321', (SELECT address_id FROM Address WHERE LOWER(street) = 'colosseum road'), CURRENT_DATE);
+        INSERT INTO Climbers (first_name, last_name, date_of_birth, phone_number, address_id, record_ts)
+        VALUES ('Reinhold', 'Messner', '1944-09-17', '987654321', (SELECT address_id FROM Address WHERE LOWER(street) = 'kaunda'), CURRENT_DATE);
     END IF;
 END $$;
 
@@ -428,13 +453,13 @@ DO $$
 BEGIN
     -- Checking if 'Himalayan Explorers' already exists in Clubs table, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Clubs WHERE LOWER(club_name) = 'himalayan explorers') THEN
-        INSERT INTO Clubs (club_id, club_name, membership_fee, created_at, record_ts)
-        VALUES (1, 'Himalayan Explorers', 150.00, '2010-04-15', CURRENT_DATE);
+        INSERT INTO Clubs (club_name, membership_fee, created_at, record_ts)
+        VALUES ('Himalayan Explorers', 150.00, '2010-04-15', CURRENT_DATE);
     END IF;
     -- Same logic
     IF NOT EXISTS (SELECT 1 FROM Clubs WHERE LOWER(club_name) = 'mountain adventurers') THEN
-        INSERT INTO Clubs (club_id, club_name, membership_fee, created_at, record_ts)
-        VALUES (2, 'Mountain Adventurers', 120.00, '2015-06-20', CURRENT_DATE);
+        INSERT INTO Clubs (club_name, membership_fee, created_at, record_ts)
+        VALUES ('Mountain Adventurers', 120.00, '2015-06-20', CURRENT_DATE);
     END IF;
 END $$;
 
@@ -458,13 +483,13 @@ DO $$
 BEGIN
 	-- Checking if 'Everest' already exists in Mounatains table, if not, insert it
 	IF NOT EXISTS (SELECT 1 FROM Mountains WHERE UPPER(name) = 'MOUNT EVEREST') THEN
-		INSERT INTO Mountains (mountain_id, name, height_cm)
-		VALUES(1, 'Everest', 8849);
+		INSERT INTO Mountains (name, height_cm)
+		VALUES('Mount Everest', 8849);
 	END IF;
 	-- Same logic
 	IF NOT EXISTS (SELECT 1 FROM Mountains WHERE UPPER(name) = 'MOUNT KILIMANJARO') THEN
-		INSERT INTO Mountains (mountain_id, name, height_cm)
-		VALUES(2, 'Mount Kilimanjaro', 5895);
+		INSERT INTO Mountains (name, height_cm)
+		VALUES('Mount Kilimanjaro', 5895);
 	END IF; 
 END $$;
 
@@ -509,13 +534,13 @@ DO $$
 BEGIN
     -- Checking if 'Mount Everest' climb already exists in Climbs table, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Climbs WHERE mountain_id = 1 AND success = true) THEN
-        INSERT INTO Climbs (climb_id, mountain_id, start_date, end_date, success, record_ts)
-        VALUES (1, 1, '2023-05-15', '2023-06-01', true, CURRENT_DATE);
+        INSERT INTO Climbs (mountain_id, start_date, end_date, success, record_ts)
+        VALUES (1, '2023-05-15', '2023-06-01', true, CURRENT_DATE);
     END IF;
     -- Same logic
     IF NOT EXISTS (SELECT 1 FROM Climbs WHERE mountain_id = 2 AND success = false) THEN
-        INSERT INTO Climbs (climb_id, mountain_id, start_date, end_date, success, record_ts)
-        VALUES (2, 2, '2023-07-10', '2023-07-20', false, CURRENT_DATE);
+        INSERT INTO Climbs (mountain_id, start_date, end_date, success, record_ts)
+        VALUES (2, '2023-07-10', '2023-07-20', false, CURRENT_DATE);
     END IF;
 END $$;
 
@@ -539,13 +564,13 @@ DO $$
 BEGIN
 	-- Checking if 'Saftey' already exists in Equipment_Type, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Equipment_Type WHERE LOWER(type) = 'safety') THEN
-        INSERT INTO Equipment_Type (type_id, type)
-        VALUES (1, 'Safety');
+        INSERT INTO Equipment_Type (type)
+        VALUES ('Safety');
     END IF;
 	-- Same logic
     IF NOT EXISTS (SELECT 1 FROM Equipment_Type WHERE LOWER(type) = 'climbing') THEN
-        INSERT INTO Equipment_Type (type_id, type)
-        VALUES (2, 'Climbing');
+        INSERT INTO Equipment_Type (type)
+        VALUES ('Climbing');
     END IF;
 END $$;
 
@@ -554,13 +579,13 @@ DO $$
 BEGIN
 	-- Checking if 'Oxygen Tank' already exists in Equipment, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Equipment WHERE LOWER(name) = 'oxygen tank') THEN
-        INSERT INTO Equipment (equipment_id, name, price_per_day, quantity_available, type_id)
-        VALUES (1, 'Oxygen Tank', 100.00, 12, 1);
+        INSERT INTO Equipment (name, price_per_day, quantity_available, type_id)
+        VALUES ('Oxygen Tank', 100.00, 12, 1);
     END IF;
 	-- Same logic
     IF NOT EXISTS (SELECT 1 FROM Equipment WHERE LOWER(name) = 'climbing rope') THEN
-        INSERT INTO Equipment (equipment_id, name, price_per_day, quantity_available, type_id)
-        VALUES (2, 'Climbing Rope', 23.60, 45, 2);
+        INSERT INTO Equipment (name, price_per_day, quantity_available, type_id)
+        VALUES ('Climbing Rope', 23.60, 45, 2);
     END IF;
 END $$;
 
@@ -601,8 +626,8 @@ DO $$
 BEGIN
     -- Checking if 'Climbing Gear Rental' service exists, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Service WHERE LOWER(service_name) = 'climbing gear rental') THEN
-        INSERT INTO Service (service_id, service_name, description, price, duration_days)
-        VALUES (1, 'Climbing Gear Rental', 
+        INSERT INTO Service (service_name, description, price, duration_days)
+        VALUES ('Climbing Gear Rental', 
 			'The "Climbing Gear Rental" service offers climbers the option to rent essential climbing equipment, 
 			such as ropes, harnesses, and helmets, ensuring they have access to high-quality gear without the need 
 			for a large upfront investment.', 
@@ -610,8 +635,8 @@ BEGIN
     END IF;
     -- Same logic
     IF NOT EXISTS (SELECT 1 FROM Service WHERE LOWER(service_name) = 'guided tour') THEN
-        INSERT INTO Service (service_id, service_name, price, duration_days)
-        VALUES (2, 'Guided Tour', 230.00, 1);
+        INSERT INTO Service (service_name, price, duration_days)
+        VALUES ('Guided Tour', 230.00, 1);
     END IF;
 END $$;
 
@@ -620,13 +645,13 @@ DO $$
 BEGIN
     -- Checking if 'Climbing Gear Rental' already exists for climber 1, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Bookings WHERE climber_id = 1 AND service_id = (SELECT service_id FROM Service WHERE LOWER(service_name) = 'climbing gear rental')) THEN
-        INSERT INTO Bookings (booking_id, climber_id, service_id, booking_date, status)
-        VALUES (1, 1, (SELECT service_id FROM Service WHERE service_name = 'Climbing Gear Rental'), '2023-05-01', 'Cancelled');
+        INSERT INTO Bookings (climber_id, service_id, booking_date, status)
+        VALUES (1, (SELECT service_id FROM Service WHERE service_name = 'Climbing Gear Rental'), '2023-05-01', 'Cancelled');
     END IF;
 	-- Same logic
     IF NOT EXISTS (SELECT 1 FROM Bookings WHERE climber_id = 2 AND service_id = (SELECT service_id FROM Service WHERE LOWER(service_name) = 'guided tour')) THEN
-        INSERT INTO Bookings (booking_id, climber_id, service_id, booking_date, status)
-        VALUES (2, 2, (SELECT service_id FROM Service WHERE LOWER(service_name) = 'guided tour'), '2023-06-01', 'Confirmed');
+        INSERT INTO Bookings (climber_id, service_id, booking_date, status)
+        VALUES (2, (SELECT service_id FROM Service WHERE LOWER(service_name) = 'guided tour'), '2023-06-01', 'Confirmed');
     END IF;
 END $$;
 
@@ -662,6 +687,3 @@ END $$;
 
 --Commit transaction
 COMMIT;
-
-ROLLBACK;
-
