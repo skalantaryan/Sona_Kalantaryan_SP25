@@ -3,9 +3,9 @@ WITH new_movies AS (
     INSERT INTO film (title, description, release_year, language_id, rental_duration, rental_rate, last_update)
     SELECT * FROM (
         VALUES 
-            ('Inception', 'A mind-bending thriller about dream infiltration.', 2010, (SELECT language_id FROM language WHERE LOWER(name) = LOWER('english')), 6, 19.99, CURRENT_DATE),
-            ('Sully: Miracle on the Hudson', 'A pilot safely lands a disabled plane on the Hudson River, saving 155 lives.', 2016, (SELECT language_id FROM language WHERE LOWER(name) = LOWER('english')), 6, 19.99, CURRENT_DATE),
-            ('Interstellar', 'A journey through space and time to save humanity.', 2014, (SELECT language_id FROM language WHERE LOWER(name) = LOWER('english')), 6, 19.99, CURRENT_DATE)
+            ('Inception', 'A mind-bending thriller about dream infiltration.', 2010, (SELECT language_id FROM language WHERE LOWER(name) = LOWER('english')), 3, 19.99, CURRENT_DATE),
+            ('Sully: Miracle on the Hudson', 'A pilot safely lands a disabled plane on the Hudson River, saving 155 lives.', 2016, (SELECT language_id FROM language WHERE LOWER(name) = LOWER('english')), 1, 4.99, CURRENT_DATE),
+            ('Interstellar', 'A journey through space and time to save humanity.', 2014, (SELECT language_id FROM language WHERE LOWER(name) = LOWER('english')), 2, 9.99, CURRENT_DATE)
     ) AS v(title, description, release_year, language_id, rental_duration, rental_rate, last_update)
     WHERE NOT EXISTS (
         SELECT * FROM film f WHERE f.title = v.title
@@ -50,6 +50,7 @@ film_actor_insert AS (
 	RETURNING actor_id, film_id, last_update
 )
 
+SELECT * FROM new_movies;
 
 
 WITH new_movies_insert AS (
@@ -82,13 +83,13 @@ SET first_name = 'Sona',
 WHERE customer_id = (SELECT customer_id FROM selected_customer);
 
 DELETE FROM payment
-WHERE customer_id = (
+WHERE customer_id IN (
     SELECT customer_id FROM customer
     WHERE UPPER(first_name) = 'SONA' AND UPPER(last_name) = 'KALANTARYAN'
 );
 
 DELETE FROM rental
-WHERE customer_id = (
+WHERE customer_id IN (
     SELECT customer_id FROM customer
     WHERE UPPER(first_name) = 'SONA' AND UPPER(last_name) = 'KALANTARYAN'
 );
@@ -106,7 +107,7 @@ rented AS (
         i.inventory_id,
         c.customer_id,
         CURRENT_DATE + INTERVAL '7 days',
-        1,
+        (SELECT staff_id FROM staff WHERE UPPER(first_name) = 'MIKE' AND UPPER(last_name) = 'HILLYER'),
         CURRENT_DATE
     FROM inventory i
     JOIN film f ON f.film_id = i.film_id
