@@ -118,7 +118,7 @@ rented AS (
 INSERT INTO payment (customer_id, staff_id, rental_id, amount, payment_date)
 SELECT 
     r.customer_id,
-    1,
+    (SELECT staff_id FROM staff WHERE UPPER(first_name) = 'MIKE' AND UPPER(last_name) = 'HILLYER'),
     r.rental_id,
     f.rental_rate,
     DATE '2017-01-10'
