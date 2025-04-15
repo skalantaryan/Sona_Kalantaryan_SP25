@@ -118,7 +118,7 @@ rented AS (
 INSERT INTO payment (customer_id, staff_id, rental_id, amount, payment_date)
 SELECT 
     r.customer_id,
-    (SELECT staff_id FROM staff WHERE UPPER(first_name) = 'MIKE' AND UPPER(last_name) = 'HILLYER'),
+    r.staff_id,
     r.rental_id,
     f.rental_rate,
     DATE '2017-01-10'
@@ -126,7 +126,7 @@ FROM rented r
 INNER JOIN inventory i ON i.inventory_id = r.inventory_id
 INNER JOIN film f ON f.film_id = i.film_id;
 
-
+select * from rental
 
 --2
 CREATE TABLE table_to_delete AS
