@@ -454,13 +454,13 @@ DO $$
 BEGIN
     -- Checking if 'Tenzing Norgay' already exists in Climbers table, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Climbers WHERE UPPER(first_name) = 'TENZING' AND UPPER(last_name) = 'NORGAY') THEN
-        INSERT INTO Climbers (climber_id, first_name, last_name, date_of_birth, phone_number, address_id, record_ts)
-        VALUES (1, 'Tenzing', 'Norgay', '1980-05-29', '123456789', (SELECT address_id FROM Address WHERE LOWER(street) = 'thamel'), CURRENT_DATE);
+        INSERT INTO Climbers (first_name, last_name, date_of_birth, phone_number, address_id, record_ts)
+        VALUES ('Tenzing', 'Norgay', '1980-05-29', '123456789', (SELECT address_id FROM Address WHERE LOWER(street) = 'thamel'), CURRENT_DATE);
     END IF;
     -- Same logic
     IF NOT EXISTS (SELECT 1 FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner') THEN
-        INSERT INTO Climbers (climber_id, first_name, last_name, date_of_birth, phone_number, address_id, record_ts)
-        VALUES (2, 'Reinhold', 'Messner', '1944-09-17', '987654321', (SELECT address_id FROM Address WHERE LOWER(street) = 'kaunda'), CURRENT_DATE);
+        INSERT INTO Climbers (first_name, last_name, date_of_birth, phone_number, address_id, record_ts)
+        VALUES ('Reinhold', 'Messner', '1944-09-17', '987654321', (SELECT address_id FROM Address WHERE LOWER(street) = 'kaunda'), CURRENT_DATE);
     END IF;
 END $$;
 
@@ -469,13 +469,13 @@ DO $$
 BEGIN
     -- Checking if 'Himalayan Explorers' already exists in Clubs table, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Clubs WHERE LOWER(club_name) = 'himalayan explorers') THEN
-        INSERT INTO Clubs (club_id, club_name, membership_fee, created_at, record_ts)
-        VALUES (1, 'Himalayan Explorers', 150.00, '2010-04-15', CURRENT_DATE);
+        INSERT INTO Clubs (club_name, membership_fee, created_at, record_ts)
+        VALUES ('Himalayan Explorers', 150.00, '2010-04-15', CURRENT_DATE);
     END IF;
     -- Same logic
     IF NOT EXISTS (SELECT 1 FROM Clubs WHERE LOWER(club_name) = 'mountain adventurers') THEN
-        INSERT INTO Clubs (club_id, club_name, membership_fee, created_at, record_ts)
-        VALUES (2, 'Mountain Adventurers', 120.00, '2015-06-20', CURRENT_DATE);
+        INSERT INTO Clubs (club_name, membership_fee, created_at, record_ts)
+        VALUES ('Mountain Adventurers', 120.00, '2015-06-20', CURRENT_DATE);
     END IF;
 END $$;
 
@@ -483,14 +483,20 @@ END $$;
 DO $$
 BEGIN
     -- Checking if combination of club_id and climber_id already exists in Club_Climber, if not, insert it
-    IF NOT EXISTS (SELECT 1 FROM Club_Climber WHERE club_id = 1 AND climber_id = 1) THEN
+    IF NOT EXISTS (SELECT 1 FROM Club_Climber WHERE club_id = (SELECT club_id FROM Clubs WHERE club_name = 'Himalayan Explorers') 
+												AND climber_id = (SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay') THEN
         INSERT INTO Club_Climber (club_id, climber_id, record_ts)
-        VALUES (1, 1, CURRENT_DATE);
+        VALUES ((SELECT club_id FROM Clubs WHERE club_name = 'Himalayan Explorers'), 
+				(SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay'), 
+				CURRENT_DATE);
     END IF;
     -- Same logic
-    IF NOT EXISTS (SELECT 1 FROM Club_Climber WHERE club_id = 2 AND climber_id = 2) THEN
+    IF NOT EXISTS (SELECT 1 FROM Club_Climber WHERE club_id = (SELECT club_id FROM Clubs WHERE club_name = 'Mountain Adventurers') 
+												AND climber_id = (SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner') THEN
         INSERT INTO Club_Climber (club_id, climber_id, record_ts)
-        VALUES (2, 2, CURRENT_DATE);
+        VALUES ((SELECT club_id FROM Clubs WHERE club_name = 'Mountain Adventurers'), 
+				(SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner'), 
+				CURRENT_DATE);
     END IF;
 END $$;
 
@@ -535,13 +541,13 @@ DO $$
 BEGIN
 	-- Checking if difficulty level 'Hard' already exists in Difficulty, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Difficulty WHERE difficulty = 'Hard') THEN
-        INSERT INTO Difficulty (difficulty_id, difficulty)
-        VALUES (1, 'Hard');
+        INSERT INTO Difficulty (difficulty)
+        VALUES ('Hard');
     END IF;
 	-- Same logic
     IF NOT EXISTS (SELECT 1 FROM Difficulty WHERE difficulty = 'Moderate') THEN
-        INSERT INTO Difficulty (difficulty_id, difficulty)
-        VALUES (2, 'Moderate');
+        INSERT INTO Difficulty (difficulty)
+        VALUES ('Moderate');
     END IF;
 END $$;
 
@@ -552,13 +558,17 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM Mountain_Difficulty WHERE mountain_id = (SELECT mountain_id FROM Mountains WHERE name = 'Mount Everest') 
 														AND difficulty_id = (SELECT difficulty_id FROM Difficulty WHERE difficulty = 'Hard')) THEN
         INSERT INTO Mountain_Difficulty (mountain_id, difficulty_id, record_ts)
-        VALUES ((SELECT mountain_id FROM Mountains WHERE name = 'Mount Everest'), (SELECT difficulty_id FROM Difficulty WHERE difficulty = 'Hard'), CURRENT_DATE);
+        VALUES ((SELECT mountain_id FROM Mountains WHERE name = 'Mount Everest'), 
+				(SELECT difficulty_id FROM Difficulty WHERE difficulty = 'Hard'), 
+				CURRENT_DATE);
     END IF;
     -- Same logic
     IF NOT EXISTS (SELECT 1 FROM Mountain_Difficulty WHERE mountain_id = (SELECT mountain_id FROM Mountains WHERE name = 'Mount Kilimanjaro') 
 														AND difficulty_id = (SELECT difficulty_id FROM Difficulty WHERE difficulty = 'Moderate'))  THEN
         INSERT INTO Mountain_Difficulty (mountain_id, difficulty_id, record_ts)
-        VALUES ((SELECT mountain_id FROM Mountains WHERE name = 'Mount Kilimanjaro'), (SELECT difficulty_id FROM Difficulty WHERE difficulty = 'Moderate'), CURRENT_DATE);
+        VALUES ((SELECT mountain_id FROM Mountains WHERE name = 'Mount Kilimanjaro'), 
+				(SELECT difficulty_id FROM Difficulty WHERE difficulty = 'Moderate'), 
+				CURRENT_DATE);
     END IF;
 END $$;
 
@@ -566,12 +576,12 @@ END $$;
 DO $$
 BEGIN
     -- Checking if 'Mount Everest' climb already exists in Climbs table, if not, insert it
-    IF NOT EXISTS (SELECT 1 FROM Climbs WHERE mountain_id = 1 AND success = true) THEN
+    IF NOT EXISTS (SELECT 1 FROM Climbs WHERE mountain_id = (SELECT mountain_id FROM Mountains WHERE UPPER(name) = 'MOUNT EVEREST') AND success = true) THEN
         INSERT INTO Climbs (mountain_id, start_date, end_date, success, record_ts)
         VALUES ((SELECT mountain_id FROM Mountains WHERE UPPER(name) = 'MOUNT EVEREST'), '2023-05-15', '2023-06-01', true, CURRENT_DATE);
     END IF;
     -- Same logic
-    IF NOT EXISTS (SELECT 1 FROM Climbs WHERE mountain_id = 2 AND success = false) THEN
+    IF NOT EXISTS (SELECT 1 FROM Climbs WHERE mountain_id = (SELECT mountain_id FROM Mountains WHERE UPPER(name) = 'MOUNT KILIMANJARO') AND success = false) THEN
         INSERT INTO Climbs (mountain_id, start_date, end_date, success, record_ts)
         VALUES ((SELECT mountain_id FROM Mountains WHERE UPPER(name) = 'MOUNT KILIMANJARO'), '2023-07-10', '2023-07-20', false, CURRENT_DATE);
     END IF;
@@ -584,13 +594,17 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM Climb_Participant WHERE climb_id = (SELECT climb_id FROM Climbs WHERE start_date = '2023-05-15')
 														AND climber_id = (SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay')) THEN
         INSERT INTO Climb_Participant (climb_id, climber_id, record_ts)
-        VALUES ((SELECT climb_id FROM Climbs WHERE start_date = '2023-05-15'), (SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay'), CURRENT_DATE);
+        VALUES ((SELECT climb_id FROM Climbs WHERE start_date = '2023-05-15'), 
+				(SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay'), 
+				CURRENT_DATE);
     END IF;
     -- Same logic
     IF NOT EXISTS (SELECT 1 FROM Climb_Participant WHERE climb_id = (SELECT climb_id FROM Climbs WHERE start_date = '2023-07-10')
 														AND climber_id = (SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner')) THEN
         INSERT INTO Climb_Participant (climb_id, climber_id, record_ts)
-        VALUES ((SELECT climb_id FROM Climbs WHERE start_date = '2023-07-10'), (SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner'), CURRENT_DATE);
+        VALUES ((SELECT climb_id FROM Climbs WHERE start_date = '2023-07-10'), 
+				(SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner'), 
+				CURRENT_DATE);
     END IF;
 END $$;
 
@@ -648,13 +662,15 @@ DO $$
 BEGIN
     -- Checking if rental for equipment 'Oxygen Tank' exists, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Equipment_Rental WHERE equipment_id = (SELECT equipment_id FROM Equipment WHERE LOWER(name) = 'oxygen tank') AND rental_date = '2023-05-01') THEN
-        INSERT INTO Equipment_Rental (rental_id, climber_id, equipment_id, rental_date, return_date, rental_quantity)
-        VALUES (1, (SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay'), (SELECT equipment_id FROM Equipment WHERE name = 'Oxygen Tank'), '2023-05-01', '2023-05-15', 2);
+        INSERT INTO Equipment_Rental (climber_id, equipment_id, rental_date, return_date, rental_quantity)
+        VALUES ((SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay'), 
+				(SELECT equipment_id FROM Equipment WHERE name = 'Oxygen Tank'), '2023-05-01', '2023-05-15', 2);
     END IF;
     -- Same logic
     IF NOT EXISTS (SELECT 1 FROM Equipment_Rental WHERE equipment_id = (SELECT equipment_id FROM Equipment WHERE LOWER(name) = 'climbing rope') AND rental_date = '2023-06-01') THEN
-        INSERT INTO Equipment_Rental (rental_id, climber_id, equipment_id, rental_date, return_date, rental_quantity)
-        VALUES (2, (SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner'), (SELECT equipment_id FROM Equipment WHERE name = 'Climbing Rope'), '2023-06-01', '2023-06-10', 1);
+        INSERT INTO Equipment_Rental (climber_id, equipment_id, rental_date, return_date, rental_quantity)
+        VALUES ((SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner'), 
+				(SELECT equipment_id FROM Equipment WHERE name = 'Climbing Rope'), '2023-06-01', '2023-06-10', 1);
     END IF;
 END $$;
 
@@ -683,12 +699,14 @@ BEGIN
     -- Checking if 'Climbing Gear Rental' already exists for climber 1, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Bookings WHERE climber_id = 1 AND service_id = (SELECT service_id FROM Service WHERE LOWER(service_name) = 'climbing gear rental')) THEN
         INSERT INTO Bookings (climber_id, service_id, booking_date, status)
-        VALUES ((SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay'), (SELECT service_id FROM Service WHERE service_name = 'Climbing Gear Rental'), '2023-05-01', 'Cancelled');
+        VALUES ((SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay'), 
+				(SELECT service_id FROM Service WHERE service_name = 'Climbing Gear Rental'), '2023-05-01', 'Cancelled');
     END IF;
 	-- Same logic
     IF NOT EXISTS (SELECT 1 FROM Bookings WHERE climber_id = 2 AND service_id = (SELECT service_id FROM Service WHERE LOWER(service_name) = 'guided tour')) THEN
         INSERT INTO Bookings (climber_id, service_id, booking_date, status)
-        VALUES ((SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner'), (SELECT service_id FROM Service WHERE LOWER(service_name) = 'guided tour'), '2023-06-01', 'Confirmed');
+        VALUES ((SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner'), 
+				(SELECT service_id FROM Service WHERE LOWER(service_name) = 'guided tour'), '2023-06-01', 'Confirmed');
     END IF;
 END $$;
 
@@ -697,13 +715,13 @@ DO $$
 BEGIN
     -- Checking if 'Credit Card' already exists in Payment_Methods, if not, insert it
     IF NOT EXISTS (SELECT 1 FROM Payment_Methods WHERE LOWER(method) = 'credit card') THEN
-        INSERT INTO Payment_Methods (method_id, method)
-        VALUES (1, 'Credit Card');
+        INSERT INTO Payment_Methods (method)
+        VALUES ('Credit Card');
     END IF;
     -- Same logic
     IF NOT EXISTS (SELECT 1 FROM Payment_Methods WHERE LOWER(method) = 'paypal') THEN
-        INSERT INTO Payment_Methods (method_id, method)
-        VALUES (2, 'PayPal');
+        INSERT INTO Payment_Methods (method)
+        VALUES ('PayPal');
     END IF;
 END $$;
 
@@ -711,16 +729,16 @@ END $$;
 DO $$
 BEGIN
     -- Checking if payment from climber 1 exists for amount 1000, if not, insert it
-    IF NOT EXISTS (SELECT 1 FROM Payments WHERE climber_id = 1 AND amount = 1000) THEN
+    IF NOT EXISTS (SELECT 1 FROM Payments WHERE climber_id = (SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner') AND amount = 1000) THEN
         INSERT INTO Payments (climber_id, amount, payment_date, payment_method_id, status, rental_id)
-        VALUES ((SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay'), 1000, '2023-05-15', 
+        VALUES ((SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner'), 1000, '2023-05-15', 
 				(SELECT method_id FROM Payment_Methods WHERE LOWER(method) = 'credit card'), 'Completed', 
 				(SELECT rental_id FROM Equipment_Rental WHERE climber_id = (SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner') AND rental_date = '2023-06-01'));
     END IF;
     -- Same logice
-    IF NOT EXISTS (SELECT 1 FROM Payments WHERE climber_id = 2 AND amount = 1200) THEN
+    IF NOT EXISTS (SELECT 1 FROM Payments WHERE climber_id = (SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay') AND amount = 1200) THEN
         INSERT INTO Payments (climber_id, amount, payment_date, payment_method_id, status, booking_id)
-        VALUES ((SELECT climber_id FROM Climbers WHERE first_name = 'Reinhold' AND last_name = 'Messner'), 1200, '2023-06-20', 
+        VALUES ((SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay'), 1200, '2023-06-20', 
 				(SELECT method_id FROM Payment_Methods WHERE LOWER(method) = 'paypal'), 'Refunded', 
 				(SELECT booking_id FROM Bookings WHERE climber_id = (SELECT climber_id FROM Climbers WHERE first_name = 'Tenzing' AND last_name = 'Norgay') AND booking_date = '2023-05-01'));
     END IF;
