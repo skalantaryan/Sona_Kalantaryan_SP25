@@ -1,19 +1,27 @@
 --1
+WITH ranked_sales AS (
+    SELECT
+        ch.channel_desc,
+        c.cust_last_name,
+        c.cust_first_name,
+        SUM(s.amount_sold) AS amount_sold_raw,
+        RANK() OVER (PARTITION BY s.channel_id ORDER BY SUM(s.amount_sold) DESC) AS rnk,
+        SUM(s.amount_sold) * 100.0 / SUM(SUM(s.amount_sold)) OVER (PARTITION BY s.channel_id) AS sales_pct
+    FROM sh.sales s
+    INNER JOIN sh.customers c ON s.cust_id = c.cust_id
+    INNER JOIN sh.channels ch ON s.channel_id = ch.channel_id
+    GROUP BY ch.channel_desc, c.cust_last_name, c.cust_first_name, s.channel_id
+)
 SELECT
-    ch.channel_desc,
-    c.cust_last_name,
-    c.cust_first_name,
-	--make the format of output nicer
-    TO_CHAR(SUM(s.amount_sold), 'FM9999990.00') AS amount_sold,
-	--calculate total sales per channel in percentage
-    TO_CHAR(ROUND((SUM(s.amount_sold) * 100.0) / SUM(SUM(s.amount_sold)) OVER (PARTITION BY s.channel_id), 4), 'FM999990.0000') || ' %' AS sales_percentage
-FROM sh.sales s
-INNER JOIN sh.customers c ON s.cust_id = c.cust_id
-INNER JOIN sh.channels ch ON s.channel_id = ch.channel_id
---find top 5 per channel
-QUALIFY RANK() OVER (PARTITION BY s.channel_id ORDER BY SUM(s.amount_sold) DESC) <= 5
-GROUP BY ch.channel_desc, c.cust_last_name, c.cust_first_name, s.channel_id
-ORDER BY ch.channel_desc, amount_sold DESC;
+    channel_desc,
+    cust_last_name,
+    cust_first_name,
+    TO_CHAR(amount_sold_raw, '9999990.00') AS amount_sold,
+    TO_CHAR(ROUND(sales_pct, 4), '999990.0000') || ' %' AS sales_percentage
+FROM ranked_sales
+WHERE rnk <= 5
+ORDER BY channel_desc, amount_sold_raw DESC;
+
 
 
 --2
@@ -68,14 +76,26 @@ WITH ranked_sales AS (
     INNER JOIN sh.times t ON s.time_id = t.time_id
     WHERE t.calendar_year IN (1998, 1999, 2001)
     GROUP BY s.cust_id, s.channel_id, t.calendar_year
+),
+top_customers AS (
+    SELECT
+        rs.cust_id,
+        rs.channel_id,
+        COUNT(DISTINCT rs.calendar_year) AS years_in_top300
+    FROM ranked_sales rs
+    WHERE rs.rank_in_channel_year <= 300
+    GROUP BY rs.cust_id, rs.channel_id
+    HAVING COUNT(DISTINCT rs.calendar_year) = 3 --Only those who are in top 300 in all 3 years
 )
 SELECT
     ch.channel_desc,
     rs.cust_id,
     c.cust_last_name,
     c.cust_first_name,
+    rs.calendar_year,
     TO_CHAR(rs.total_sales, '9999990.00') AS amount_sold
 FROM ranked_sales rs
+INNER JOIN top_customers ts ON rs.cust_id = ts.cust_id AND rs.channel_id = ts.channel_id
 INNER JOIN sh.customers c ON rs.cust_id = c.cust_id
 INNER JOIN sh.channels ch ON rs.channel_id = ch.channel_id
 WHERE rs.rank_in_channel_year <= 300
